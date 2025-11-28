@@ -3,6 +3,7 @@ import pandas as pd
 configs = {
     'gencode_annotation': '/sc/arion/projects/lowtherlab/data/assembly/gencode.v49.primary_assembly.basic.annotation.gtf',
     'annot_types': '/hpc/users/seress01/projects/svmurt/data/input/annotation_types',
+    'output_folder': '/hpc/users/seress01/projects/svmurt/data/analysis/'
 }
 
 def load_gencode_annotation(gtf_address):
@@ -21,3 +22,5 @@ df = df[['chr', 'start', 'end', 'gene_id']]
 
 #replace chri with i in chr column
 df['chr'] = df['chr'].apply(lambda x: x.replace('chr', '') if 'chr' in x else x)
+
+df.to_csv(f"{configs['output_folder']}gencode_protein_coding_genes.bed", sep='\t', index=False, header=False)

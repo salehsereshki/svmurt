@@ -59,3 +59,45 @@ plot.save(f'masked_regions_hg19_bins_size_{bin_size}_{config["AF_tag"]}.png', dp
 
 #vcs.to_csv('gnomad_bps_in_hg19_bins_size_5000.tsv', sep='\t', index=False)
 
+
+#######################################################################
+
+
+
+for record in vcf_reader:
+    if record.FILTER not in [None, 'PASS']: continue
+    info = record.INFO
+    if info.get('SVTYPE') != 'DEL': continue
+    af = info.get('AF')
+    if af is None: continue
+    chr2 = info.get('CHR2', '')
+    end = info.get('END', '')
+    line = f"{record.CHROM}\t{record.POS}\t{record.ID}\tPASS\t{af}\t{chr2}\t{end}\n"
+    if af < 0.01:
+        out1.write(line)
+    elif af < 0.05:
+        out2.write(line)
+    else:
+        out3.write(line)
+
+for f in (out1, out2, out3): f.close()
+
+
+
+# files 'group1_AF_lt_0.01.tsv', 'group1_AF_lt_0.01_awk.tsv', 'group2_AF_0.01_to_0.05.tsv', 'group2_AF_0.01_to_0.05_awk.tsv', 'group3_AF_gt_0.05.tsv', 'group3_AF_gt_0.05_awk.tsv'
+
+#Make a list of file neames
+file_names = [
+    'group1_AF_lt_0.01_awk.tsv',
+    'group2_AF_0.01_to_0.05_awk.tsv',
+    'group3_AF_gt_0.05_awk.tsv'
+]
+
+dfs = [pd.read_csv(file_names[i], sep='\t') for i in range(3)]
+# compare first and second dfs in each touple of dfs and check if their ID:AF columns match exactly
+for i, (df1, df2) in enumerate(dfs):
+    print(set(df1['ID'].unique()) == set(df2['ID'].unique()))
+    mrgd = pd.merge(df1, df2, on='ID', suffixes=('_x', '_y'))
+    mrgd['diff'] = mrgd['AF_x'] - mrgd['AF_y']
+    print(len(mrgd[mrgd['diff'] > 0.01]))
+
